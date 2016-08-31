@@ -8,14 +8,13 @@
 #define MEASUREMENT_JSON_SIZE (JSON_OBJECT_SIZE(5))
 
 struct Measurement {
-  char timeStamp[21];
+  char timeStamp[20];
   float lat;
   float lng;
   float value;
   char sensorID[32];
 };
 
-// TODO: TEST THIS THING!!
 class Storage {
   protected:
   // not needed, as we post the data as json string?
@@ -32,16 +31,15 @@ class Storage {
   }*/
 
   bool serializeMeasurement(Measurement& m, Print& f) {
+    f.println(m.sensorID);
     StaticJsonBuffer<MEASUREMENT_JSON_SIZE> jsonBuffer;
     JsonObject& root = jsonBuffer.createObject();
-    // TODO: fix data model
-    root["date"] = m.timeStamp;
+    // TODO: replace temporary data model
+    root["createdAt"] = m.timeStamp;
     root["lat"] = m.lat;
     root["lng"] = m.lng;
     root["value"] = m.value;
-    root["sensorId"] = m.sensorID;
     root.printTo(f);
-    f.print("\n");
     return root.success();
   }
   
@@ -75,23 +73,11 @@ class Storage {
     if (!dir.next()) return measurement; // abort if storage is empty
     String fileName = dir.fileName();
     File f = dir.openFile("r");
-    measurement = f.readStringUntil('\n'); // assumes that the data does not contain any \n!
+    measurement = f.readString();
     f.close();
     SPIFFS.remove(fileName);
     return measurement;
   }
-
-  /*const Measurement pop(const char* directory = "/measurements/") {
-    Dir dir = SPIFFS.openDir(directory);
-    Measurement m;
-    if (!dir.next()) return m; // abort if storage is empty
-    String fileName = dir.fileName();
-    File f = dir.openFile("r");
-    m = deserializeMeasurement(f);
-    f.close();
-    SPIFFS.remove(fileName);
-    return m;
-  }*/
 
   uint16_t size(const char* directory = "/measurements/") {
     Dir dir = SPIFFS.openDir(directory);

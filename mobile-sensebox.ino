@@ -35,9 +35,9 @@ void setup() {
   DEBUG_OUT.begin(115200);
 
   WiFi.mode(WIFI_STA);
-  connectWifi(WIFI_SSID, WIFI_PASS);
+  //connectWifi(WIFI_SSID, WIFI_PASS);
 
-  delay(5000);
+  //delay(5000); // DEBUG: oportunity to connect to network logger
 
   // wait until we got a first fix from GPS, and thus an initial time
   /*DEBUG_OUT.print("Getting GPS fix..");
@@ -54,10 +54,9 @@ void setup() {
   DEBUG_OUT.print("SPIFF bytes free: ");
   DEBUG_OUT.println(storage.begin());
   
-  digitalWrite(D9, HIGH);
+  digitalWrite(D9, HIGH); // DEBUG: integrated  led? doesnt work
 }
 
-bool firstLoop = true;
 void loop() {
   //pollGPS();
   //DEBUG_OUT.pollClients();
@@ -75,21 +74,28 @@ void loop() {
 
   printState(wifi);
 
-  //delay(20000);
-  if (firstLoop) {
-    Measurement testMeasure;
-    testMeasure.lat = 51.2;
-    testMeasure.lng = 7.89;
-    testMeasure.value = 66.6;
-    strcpy(testMeasure.timeStamp, "2016-08-21T09:07:22Z");
-    strcpy(testMeasure.sensorID, "123457812345678123456781234567");
-    
-    if (storage.add(testMeasure)) {
-      DEBUG_OUT.println("measurement stored! storage size: ");
-    } else {
-      DEBUG_OUT.println("measurement store failed! storage size: ");
-    }
-    DEBUG_OUT.println(storage.size());
-    firstLoop = false;
+  // recall all previous measurements
+  while (storage.size()) {
+    String measure = storage.pop();
+    DEBUG_OUT.println("popped a measurement: ");
+    DEBUG_OUT.println(measure.substring(0, 31)); // size of sensorID
+    DEBUG_OUT.println(measure.substring(32));    // skip the newline char
   }
+
+  // store new measurement
+  Measurement testMeasure;
+  testMeasure.lat = 51.2;
+  testMeasure.lng = 7.89;
+  testMeasure.value = wifi.numNetworks;
+  strcpy(testMeasure.timeStamp, getISODate());
+  strcpy(testMeasure.sensorID, "123457812345678123456781234567");
+  
+  if (storage.add(testMeasure)) {
+    DEBUG_OUT.print("measurement stored! storage size: ");
+  } else {
+    DEBUG_OUT.print("measurement store failed! storage size: ");
+  }
+  DEBUG_OUT.println(storage.size());
+  
+  delay(2000);
 }
