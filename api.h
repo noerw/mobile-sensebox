@@ -1,31 +1,40 @@
 #pragma once
 #include <WiFiClientSecure.h>
 #include "config.h"
+#include "streampipe.h"
 
 class OsemApi {
   protected:
   WiFiClientSecure client;
 
   public:
-  bool postMeasurement(String m, String sensorID) {
+  bool postMeasurement(String measurement, String sensorID) {
     //telnet.print("Connecting to API.. ");
     if (!client.connect(API_ENDPOINT, 443)) {
-      //telnet.println("connection failed");
+      //Serial.println("connection failed");
       return false;
     }
     
     if (!client.verify(API_FINGERPRINT, API_ENDPOINT)) {
-      Serial.println("certificate doesn't match");
+      //Serial.println("certificate doesn't match");
       return false;
     }
-  
-    String url = "/boxes/" + String(ID_BOX) + "/" + sensorID;
-    // TODO: add actual measurement to post
-    client.print(String("POST ") + url + " HTTP/1.1\r\n" +
-                 "Host: " + API_ENDPOINT + "\r\n" +
-                 "User-Agent: mobile-sensebox-esp8266\r\n" +
-                 "Connection: close\r\n\r\n");
-  
+    
+    client << String("POST ") << "/boxes/" << ID_BOX << "/" << sensorID << " HTTP/1.1" << EOL;
+    client << "Host: " << API_ENDPOINT << EOL;
+    client << "X-APIKey: " << API_KEY << EOL;
+    client << "Content-Type: application/json" << EOL;
+    client << "Connection: close" << EOL;
+    client << "Content-Length: " << measurement.length() << EOL << EOL;
+    client << measurement;
+
+    // read response
+    while (client.connected()) {
+      String line = client.readStringUntil('\n');
+      if (line == "\r") break;
+    }
+    Serial << "API-Server response: " << client.readString() << EOL;
+
     return true;
   }
 };

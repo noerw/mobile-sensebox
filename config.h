@@ -1,19 +1,22 @@
-/* WiFi (ESP8266) */
 #pragma once
 
-static const char* WIFI_SSID = "Elmo";
-static const char* WIFI_PASS = "FreiBier123";
+/* WiFi (ESP8266) */
+
+
+#define WIFI_SSID "Penaten"
+#define WIFI_PASS "XXXXXX"
 
 /* GPS reciever (uBloc NEO-7M) */
-static const int   GPS_RX_PIN = 4;
-static const int   GPS_TX_PIN = 3;
-static const int   GPS_BAUD = 9600;
-static const int   GPS_INTERVAL = 1000; // update interval of the gps device
+#define GPS_RX_PIN 4
+#define GPS_TX_PIN 3
+#define GPS_BAUD 9600
+#define GPS_INTERVAL 1000 // update interval of the gps device
 
 /* API (openSenseMap) */
-static const char* API_ENDPOINT = "api.opensensemap.org";
+#define API_ENDPOINT "api.osem.vo1d.space"
 // SHA1 of the API SSL cert
-static const char* API_FINGERPRINT = "0F B0 0C E0 FD 18 C2 0B 07 1C 21 AB A0 FF EF CC 09 62 57 A9";
-static const char* API_KEY = "...";
-static const char* ID_BOX = "57308b2c566b8d3c11114a9f";
-static const char* ID_SENSOR_WIFI = "...";
+#define API_FINGERPRINT "A2 38 74 C7 B0 71 07 D4 2A 1C A5 6D 0D 05 3E 0A 90 68 A5 CB"
+#define API_KEY_LENGTH 24
+#define API_KEY "XXXXXXXXXXX"
+#define ID_BOX "57c7f3291421551100bf13c8"
+#define ID_SENSOR_WIFI "57c7f3291421551100bf13ca"

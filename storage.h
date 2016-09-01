@@ -2,45 +2,36 @@
 
 #include <FS.h>
 #include <ESP8266TrueRandom.h>
-#include <ArduinoJson.h>
-#include "api.h"
+#include "config.h"
+#include "streampipe.h"
 
-#define MEASUREMENT_JSON_SIZE (JSON_OBJECT_SIZE(5))
+#define MEASUREMENT_JSON_SIZE (JSON_OBJECT_SIZE(4)) // 4 properties (sensorID is excluded)
 
 struct Measurement {
   char timeStamp[20];
   float lat;
   float lng;
   float value;
-  char sensorID[32];
+  char sensorID[API_KEY_LENGTH];
 };
 
 class Storage {
   protected:
-  // not needed, as we post the data as json string?
-  /*Measurement deserializeMeasurement(char* s) {
-    Measurement m; 
-    StaticJsonBuffer<MEASUREMENT_JSON_SIZE> jsonBuffer;
-    JsonObject& root = jsonBuffer.parseObject(s);
-    m.timeStamp = (const char[sizeof Measurement.timeStamp])jsonBuffer.strdup(root["date"]);
-    m.lat = root["lat"];
-    m.lng = root["lng"];
-    m.value = root["value"];
-    m.sensorID = root["sensorId"];
-    return m;
-  }*/
+  void serializeMeasurement(Measurement& m, Print& f) {
+    // prepend the sensor ID to the json
+    f << m.sensorID << EOL;
 
-  bool serializeMeasurement(Measurement& m, Print& f) {
-    f.println(m.sensorID);
-    StaticJsonBuffer<MEASUREMENT_JSON_SIZE> jsonBuffer;
-    JsonObject& root = jsonBuffer.createObject();
-    // TODO: replace temporary data model
-    root["createdAt"] = m.timeStamp;
-    root["lat"] = m.lat;
-    root["lng"] = m.lng;
-    root["value"] = m.value;
-    root.printTo(f);
-    return root.success();
+    // convert floats to strings
+    char val[10], lat[10], lng[10];
+    dtostrf(m.value, 5, 6, val);
+    dtostrf(m.lat, 5, 6, lat);
+    dtostrf(m.lng, 5, 6, lng);
+    
+    f << "{\"value\":" << val
+      << ",\"createdAt\":\"" << m.timeStamp
+      << "\",\"lat\":" << lat
+      << ",\"lng\":" << lng
+      << "}" << EOL;
   }
   
   public:
@@ -60,9 +51,9 @@ class Storage {
     String fileName = directory + ESP8266TrueRandom.uuidToString(uuid).substring(26);
     
     if (File f = SPIFFS.open(fileName, "w") ) {
-      bool success = serializeMeasurement(m, f);
+      serializeMeasurement(m, f);
       f.close();
-      return success;
+      return true;
     }
     return false;
   }

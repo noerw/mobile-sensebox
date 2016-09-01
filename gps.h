@@ -3,6 +3,8 @@
 #include <Time.h>
 #include "config.h"
 
+// TODO: refactor updateXXX members to be protected and called by getXXX ?
+
 class Gps {
   protected:
   TinyGPSPlus gps;
@@ -59,8 +61,12 @@ class Gps {
     return true;
   }
 
+  TinyGPSLocation& getLocation() {
+    return gps.location;
+  }
+  
   /**
-   * return an iso8266 formatted datestring with the current time
+   * return an iso8601 formatted datestring with the current time
    */
   static char* getISODate() {
     // TODO: check why we need to allocate that much storage for a 20 character string for Serial printing??

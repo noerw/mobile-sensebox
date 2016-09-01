@@ -14,7 +14,7 @@ class Wifi {
     WiFi.mode(WIFI_STA);
   }
   
-  WifiState scanWifi(String homeSSID) {
+  WifiState scan(String homeSSID) {
     // TODO: filter duplicate SSIDs!
     WifiState state;
     state.homeAvailable = false;
@@ -32,7 +32,7 @@ class Wifi {
     return state;
   }
   
-  bool connectWifi(const char* ssid, const char* pass) {
+  bool connect(const char* ssid, const char* pass) {
     static const unsigned int timeout = 10000; // abort after 10 secs
     unsigned long start = millis();
   

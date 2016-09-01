@@ -6,6 +6,7 @@
 #include "TelnetPrint.h"
 
 #define DEBUG_OUT Serial
+//#define DEBUG_OUT telnet
 
 //TelnetPrint telnet = TelnetPrint();
 Storage storage = Storage();
@@ -23,15 +24,15 @@ void printState(WifiState wifiState) {
   DEBUG_OUT.println(wifiState.numUnencrypted);
 
   DEBUG_OUT.print("lat: ");
-  //DEBUG_OUT.print(gps.location.lat(), 6);
+  //DEBUG_OUT.print(gps.getLocation().lat(), 6);
   DEBUG_OUT.print(" lng: ");
-  //DEBUG_OUT.println(gps.location.lng(), 6);
+  //DEBUG_OUT.println(gps.getLocation().lng(), 6);
 
   DEBUG_OUT.println(gps.getISODate());
   DEBUG_OUT.println("");
 }
 
-bool storeMeasurement(float lat, float lng, float value, char* timeStamp, char* sensorID) {
+bool storeMeasurement(float lat, float lng, float value, const char* timeStamp, const char* sensorID) {
   Measurement m;
   m.lat = lat;
   m.lng = lng;
@@ -51,7 +52,7 @@ void setup() {
   //gps.begin();
   wifi.begin();
   
-  //connectWifi(WIFI_SSID, WIFI_PASS);
+  wifi.connect(WIFI_SSID, WIFI_PASS);
 
   //delay(5000); // DEBUG oportunity to connect to network logger
 
@@ -76,7 +77,7 @@ void setup() {
 void loop() {
   //pollGPS();
   //DEBUG_OUT.pollClients();
-  WifiState wifiState = wifi.scanWifi(WIFI_SSID);
+  WifiState wifiState = wifi.scan(WIFI_SSID);
   char* dateString = gps.getISODate();
 
   // TODO: take other measurements (average them?)
@@ -86,7 +87,7 @@ void loop() {
 */
 
   // write measurements to file
-  if (storeMeasurement(51.2, 7.89, wifiState.numNetworks, dateString, "12341234123412341234123412341234")) {
+  if (storeMeasurement(51.25345345, 7.89, wifiState.numNetworks, "2016-08-31T00:03:10Z", ID_SENSOR_WIFI)) {
     DEBUG_OUT.print("measurement stored! storage size: ");
   } else {
     DEBUG_OUT.print("measurement store failed! storage size: ");
@@ -94,17 +95,14 @@ void loop() {
   DEBUG_OUT.println(storage.size());
 
   // TODO: connect to wifi, if available & not connected yet
-    // then upload local data, remove from storage
-    
-  // DEBUG: recall all previous measurements
+  
+  // then upload local data, remove from storage
   while (storage.size()) {
     String measure = storage.pop();
-    //api.postMeasurement(measure.substring(0, 31), measure.substring(32));
-    DEBUG_OUT.println("popped a measurement: ");
-    DEBUG_OUT.println(measure.substring(0, 31)); // size of sensorID
-    DEBUG_OUT.println(measure.substring(32));    // skip the newline char
+    api.postMeasurement(measure.substring(API_KEY_LENGTH + 1), measure.substring(0, API_KEY_LENGTH));
   }
 
   printState(wifiState);
+  delay(5000);
 }
 
