@@ -50,5 +50,9 @@ class Wifi {
     //telnet.println(" timeout");
     return false;
   }
+
+  bool isConnected() {
+    return (WiFi.status() == WL_CONNECTED);
+  }
 };
 

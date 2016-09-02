@@ -11,12 +11,10 @@ class OsemApi {
   bool postMeasurement(String measurement, String sensorID) {
     //telnet.print("Connecting to API.. ");
     if (!client.connect(API_ENDPOINT, 443)) {
-      //Serial.println("connection failed");
       return false;
     }
     
     if (!client.verify(API_FINGERPRINT, API_ENDPOINT)) {
-      //Serial.println("certificate doesn't match");
       return false;
     }
     
@@ -29,12 +27,10 @@ class OsemApi {
     client << measurement;
 
     // read response
-    while (client.connected()) {
-      String line = client.readStringUntil('\n');
-      if (line == "\r") break;
-    }
-    Serial << "API-Server response: " << client.readString() << EOL;
-
+    if (!client.connected()) return false;
+    String line = client.readStringUntil('\r');
+    if (line != "HTTP/1.1 201 Created") return false;
+   
     return true;
   }
 };

@@ -66,14 +66,11 @@ class Gps {
   }
   
   /**
-   * return an iso8601 formatted datestring with the current time
+   * fill a char[20] with an iso8601 formatted date from now
    */
-  static char* getISODate() {
-    // TODO: check why we need to allocate that much storage for a 20 character string for Serial printing??
-    char result[100] = { 0 };
-    sprintf(result, "%04d-%02d-%02d-T%02d:%02d:%02dZ",
+  void getISODate(char* result) {
+    sprintf(result, "%04d-%02d-%02dT%02d:%02d:%02dZ",
       year(), month(), day(), hour(), minute(), second());
-    return result;
   }
 };
 

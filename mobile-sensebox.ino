@@ -4,33 +4,15 @@
 #include "api.h"
 #include "storage.h"
 #include "TelnetPrint.h"
+#include "streampipe.h"
 
-#define DEBUG_OUT Serial
-//#define DEBUG_OUT telnet
+#define DEBUG_OUT telnet // debug output is available via telnet!
 
-//TelnetPrint telnet = TelnetPrint();
 Storage storage = Storage();
 Wifi wifi = Wifi();
+TelnetPrint telnet = TelnetPrint();
 OsemApi api = OsemApi();
 Gps gps = Gps();
-
-/* UTILS */
-void printState(WifiState wifiState) {
-  DEBUG_OUT.print("homeAvailable: ");
-  DEBUG_OUT.println(wifiState.homeAvailable);
-  DEBUG_OUT.print("numNetworks: ");
-  DEBUG_OUT.println(wifiState.numNetworks);
-  DEBUG_OUT.print("numUnencrypted: ");
-  DEBUG_OUT.println(wifiState.numUnencrypted);
-
-  DEBUG_OUT.print("lat: ");
-  //DEBUG_OUT.print(gps.getLocation().lat(), 6);
-  DEBUG_OUT.print(" lng: ");
-  //DEBUG_OUT.println(gps.getLocation().lng(), 6);
-
-  DEBUG_OUT.println(gps.getISODate());
-  DEBUG_OUT.println("");
-}
 
 bool storeMeasurement(float lat, float lng, float value, const char* timeStamp, const char* sensorID) {
   Measurement m;
@@ -43,26 +25,57 @@ bool storeMeasurement(float lat, float lng, float value, const char* timeStamp, 
   return storage.add(m);
 }
 
+bool uploadMeasurements(const uint16_t maxUploads = 5) {
+  uint16_t uploadCount = 0;
+  String measure;
+  // only upload limited measures per cycle, to avoid long gaps in measurements
+  while (storage.size() && uploadCount++ < maxUploads) {
+    measure = storage.pop();
+    DEBUG_OUT << "Uploading measurement for " << measure;
+    if(!api.postMeasurement(measure.substring(API_KEY_LENGTH + 1), measure.substring(0, API_KEY_LENGTH))) {
+      DEBUG_OUT << "upload failed!" << EOL;
+      return false;
+    }
+    DEBUG_OUT << "success!" << EOL;
+  }
+  return true;       
+}
+
+// delay for a given duration (ms), rollover-safe implementation
+// offset may be a duration which has been "used up" before, so the delay is adaptive,
+// meaning that the interval of a adaptiveDelay() call is constant
+void adaptiveDelay(unsigned long ms, unsigned long offset = 0) {
+  unsigned long start = millis();
+  for (;;) {
+    // for some reason, operations have to be performed in this loop for
+    // proper operation, so we just do the polling to be done anyway
+    gps.pollGPS();
+    telnet.pollClients();
+  
+    unsigned long now = millis();
+    unsigned long elapsed = now - start + offset;
+    //DEBUG_OUT << elapsed << EOL;
+    if (elapsed >= ms) return;
+  }
+}
 
 /* MAIN ENTRY POINTS */
 void setup() {
-  DEBUG_OUT.begin(115200);
-
   size_t bytesFree = storage.begin();
-  //gps.begin();
+  gps.begin();
   wifi.begin();
   
+  // DEBUG: just for connection to telnet printer
   wifi.connect(WIFI_SSID, WIFI_PASS);
-
-  //delay(5000); // DEBUG oportunity to connect to network logger
+  DEBUG_OUT.begin();
+  delay(5000);
+  telnet.pollClients();
 
   // wait until we got a first fix from GPS, and thus an initial time
-  /*DEBUG_OUT.print("Getting GPS fix..");
+  DEBUG_OUT.print("Getting GPS fix..");
   while (!gps.updateLocation()) { DEBUG_OUT.print("."); }
-  DEBUG_OUT.print(" done! ");*/
-  DEBUG_OUT.println(gps.getISODate());
+  DEBUG_OUT.println(" done! ");
 
-  DEBUG_OUT.println("Setup done!\n");
   DEBUG_OUT.println("WiFi MAC            WiFi IP");
   DEBUG_OUT.print(WiFi.macAddress());
   DEBUG_OUT.print("   ");
@@ -71,38 +84,58 @@ void setup() {
   DEBUG_OUT.print("SPIFF bytes free: ");
   DEBUG_OUT.println(bytesFree);
   
-  digitalWrite(D9, HIGH); // DEBUG: integrated led? doesnt work
+  DEBUG_OUT.println("Setup done!\n");
 }
 
-void loop() {
-  //pollGPS();
-  //DEBUG_OUT.pollClients();
-  WifiState wifiState = wifi.scan(WIFI_SSID);
-  char* dateString = gps.getISODate();
+unsigned long cycleStart;
+TinyGPSLocation loc;
+char dateString[20];
 
-  // TODO: take other measurements (average them?)
-/*
+void loop() {
+  cycleStart = millis();
+  
+  //gps.pollGPS();
+  //telnet.pollClients();
+
+  // measure WiFi
+  WifiState wifiState = wifi.scan(WIFI_SSID);
+
+  // measure GPS
   if(!gps.updateLocation()) DEBUG_OUT.println("GPS timed out (location)");
   if(!gps.updateTime()) DEBUG_OUT.println("GPS timed out (time)");
-*/
+  loc = gps.getLocation();
+  gps.getISODate(dateString);
+
+  // print state
+  DEBUG_OUT << "homeAvailable:  " << wifiState.homeAvailable << EOL;
+  DEBUG_OUT << "numNetworks:    " << wifiState.numNetworks << EOL;
+  DEBUG_OUT << "numUnencrypted: " << wifiState.numUnencrypted << EOL;
+  DEBUG_OUT.print("lat: ");
+  DEBUG_OUT.print(loc.lat(), 6);
+  DEBUG_OUT.print(" lng: ");
+  DEBUG_OUT.println(loc.lng(), 6);
+  DEBUG_OUT << dateString << EOL;
 
   // write measurements to file
-  if (storeMeasurement(51.25345345, 7.89, wifiState.numNetworks, "2016-08-31T00:03:10Z", ID_SENSOR_WIFI)) {
-    DEBUG_OUT.print("measurement stored! storage size: ");
+  if (storeMeasurement(loc.lat(), loc.lng(), wifiState.numNetworks, dateString, ID_SENSOR_WIFI)) {
+    DEBUG_OUT.print("measurement (wifi) stored! storage size: ");
   } else {
-    DEBUG_OUT.print("measurement store failed! storage size: ");
+    DEBUG_OUT.print("measurement (wifi) store failed! storage size: ");
   }
   DEBUG_OUT.println(storage.size());
 
-  // TODO: connect to wifi, if available & not connected yet
-  
-  // then upload local data, remove from storage
-  while (storage.size()) {
-    String measure = storage.pop();
-    api.postMeasurement(measure.substring(API_KEY_LENGTH + 1), measure.substring(0, API_KEY_LENGTH));
+  // connect to wifi, if available & not connected yet
+  // once we are connected, upload (max) 3 stored measurements & free the storage
+  if (wifi.isConnected() || (wifiState.homeAvailable && wifi.connect(WIFI_SSID, WIFI_PASS)) ) {
+    uploadMeasurements(3);  
   }
+  
+  DEBUG_OUT << EOL;
 
-  printState(wifiState);
-  delay(5000);
+  // the measurement & upload cycle takes ~4 seconds, so lets we wait measure
+  // every 10secs in total
+  // run the loop every 10secs. using an adaptive delay
+  // IDEA: dont use time but distance interval? -> TinyGPSPlus::distanceBetween()
+  adaptiveDelay(MEASUREMENT_INTERVAL, millis() - cycleStart);
 }
 
