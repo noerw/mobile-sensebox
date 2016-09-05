@@ -108,6 +108,7 @@ void loop() {
 
   // print state
   DEBUG_OUT << "homeAvailable:  " << wifiState.homeAvailable << EOL;
+  DEBUG_OUT << "numAPs:         " << wifiState.numAccessPoints << EOL;
   DEBUG_OUT << "numNetworks:    " << wifiState.numNetworks << EOL;
   DEBUG_OUT << "numUnencrypted: " << wifiState.numUnencrypted << EOL;
   DEBUG_OUT.print("lat: ");
@@ -116,18 +117,32 @@ void loop() {
   DEBUG_OUT.println(loc.lng(), 6);
   DEBUG_OUT << dateString << EOL;
 
+  // TODO. write location update to file  
+  
   // write measurements to file
-  if (storeMeasurement(loc.lat(), loc.lng(), wifiState.numNetworks, dateString, ID_SENSOR_WIFI)) {
-    DEBUG_OUT.print("measurement (wifi) stored! storage size: ");
+  if (storeMeasurement(loc.lat(), loc.lng(), wifiState.numAccessPoints, dateString, ID_SENSOR_WIFI_APS)) {
+    DEBUG_OUT.print("measurement (wifi aps) stored! storage size: ");
   } else {
-    DEBUG_OUT.print("measurement (wifi) store failed! storage size: ");
+    DEBUG_OUT.print("measurement (wifi aps) store failed! storage size: ");
   }
   DEBUG_OUT.println(storage.size());
-
+  if (storeMeasurement(loc.lat(), loc.lng(), wifiState.numNetworks, dateString, ID_SENSOR_WIFI_NET)) {
+    DEBUG_OUT.print("measurement (wifi nets) stored! storage size: ");
+  } else {
+    DEBUG_OUT.print("measurement (wifi nets) store failed! storage size: ");
+  }
+  DEBUG_OUT.println(storage.size());
+  if (storeMeasurement(loc.lat(), loc.lng(), wifiState.numUnencrypted, dateString, ID_SENSOR_WIFI_OPEN)) {
+    DEBUG_OUT.print("measurement (wifi open) stored! storage size: ");
+  } else {
+    DEBUG_OUT.print("measurement (wifi open) store failed! storage size: ");
+  }
+  DEBUG_OUT.println(storage.size());
+  
   // connect to wifi, if available & not connected yet
-  // once we are connected, upload (max) 3 stored measurements & free the storage
+  // once we are connected, upload (max) 4 stored measurements & free the storage
   if (wifi.isConnected() || (wifiState.homeAvailable && wifi.connect(WIFI_SSID, WIFI_PASS)) ) {
-    uploadMeasurements(3);  
+    uploadMeasurements(4);  
   }
   
   DEBUG_OUT << EOL;

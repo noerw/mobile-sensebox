@@ -4,6 +4,7 @@
 
 struct WifiState {
   bool homeAvailable;
+  unsigned int numAccessPoints;
   unsigned int numNetworks;
   unsigned int numUnencrypted;
 };
@@ -15,20 +16,37 @@ class Wifi {
   }
   
   WifiState scan(String homeSSID) {
-    // TODO: filter duplicate SSIDs!
     WifiState state;
-    state.homeAvailable = false;
-    state.numNetworks = WiFi.scanNetworks(false, false);
+    int n = WiFi.scanNetworks(false,false);
+    state.numAccessPoints = n;
+    state.numNetworks = n;
     state.numUnencrypted = 0;
+    state.homeAvailable = false;
+    int indices[n];
+    String ssid;
+    
+    for (int i = 0; i < n; i++) indices[i] = i;
+
+    for (int i = 0; i < n; i++) {
+      // filter duplicates
+      if(indices[i] == -1) {
+        --state.numNetworks;
+        continue;
+      }
+      ssid = WiFi.SSID(indices[i]);
+      for (int j = i + 1; j < n; j++) {
+        if (ssid == WiFi.SSID(indices[j])) indices[j] = -1;
+      }
+      
+      if (indices[i] != -1) {
+        if (WiFi.encryptionType(indices[i]) == ENC_TYPE_NONE)
+          ++state.numUnencrypted;
   
-    for (unsigned int i = 0; i < state.numNetworks; i++) {
-      if (WiFi.encryptionType(i) == ENC_TYPE_NONE)
-        ++state.numUnencrypted;
-  
-      if (WiFi.SSID(i) == homeSSID)
-        state.homeAvailable = true;
+        if (WiFi.SSID(indices[i]) == homeSSID)
+          state.homeAvailable = true;
+      }
     }
-  
+    
     return state;
   }
   
