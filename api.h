@@ -9,7 +9,6 @@ class OsemApi {
 
   public:
   bool postMeasurement(String measurement, String sensorID) {
-    //telnet.print("Connecting to API.. ");
     if (!client.connect(API_ENDPOINT, 443)) {
       return false;
     }

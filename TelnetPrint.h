@@ -8,7 +8,7 @@
 
 # pragma once
 #include <ESP8266WiFi.h>
-#define MAX_TELNET_CLIENTS 3
+#define MAX_TELNET_CLIENTS 3 // more
 
 class TelnetPrint : public Print {
   protected:
@@ -47,7 +47,7 @@ class TelnetPrint : public Print {
     }      
   }
 
-  // TODO: find more efficient method than sending byte by byte
+  // TODO: find more efficient method than sending byte by byte (!)
   virtual size_t write(uint8_t s) {
     for(uint8_t i = 0; i < MAX_TELNET_CLIENTS; i++){
       if (clients[i] && clients[i].connected()){
@@ -58,13 +58,13 @@ class TelnetPrint : public Print {
   }
 
   // Is only called for Strings, not char arrays
-  virtual size_t write(const char *buffer, size_t size) {
+  /*virtual size_t write(const char *buffer, size_t size) {
     for(uint8_t i = 0; i < MAX_TELNET_CLIENTS; i++){
       if (clients[i] && clients[i].connected()){
         clients[i].write(buffer, size);
       }
     }
     return size;
-  }
+  }*/
 };
 
