@@ -1,3 +1,4 @@
+#include <TinyGPS++.h>
 #include "config.h"
 #include "gps.h"
 #include "wifi.h"
@@ -14,6 +15,10 @@ TelnetPrint telnet = TelnetPrint();
 OsemApi api = OsemApi();
 Gps gps = Gps();
 
+unsigned long cycleStart;
+WifiState wifiState; // global, as both measure and upload need the state
+TinyGPSLocation location;
+
 bool storeMeasurement(float lat, float lng, float value, const char* timeStamp, const char* sensorID) {
   Measurement m;
   m.lat = lat;
@@ -24,22 +29,21 @@ bool storeMeasurement(float lat, float lng, float value, const char* timeStamp, 
   return storage.add(m);
 }
 
-void measure(WifiState& wifiState) {
+void measure(WifiState& wifiState, TinyGPSLocation& loc) {
   char dateString[20];
   
   // measure WiFi
   wifiState = wifi.scan(WIFI_SSID);
 
-  // update gps position 
-  // TODO: how to handle lost GPS fix?
-  // TODO: check if is data is valid?
+  // update gps position if we can't get a fix, skip the measurements
   if(!gps.updateLocation() || !gps.updateTime()) {
-    DEBUG_OUT << "GPS timed out" << EOL;
-    digitalWrite(BUILTIN_LED, LOW);
-  } else {
-    digitalWrite(BUILTIN_LED, HIGH);    
+    DEBUG_OUT << "GPS timed out, skipping measurements" << EOL;
+    digitalWrite(BUILTIN_LED, LOW); // turn status LED on
+    return;
   }
-  TinyGPSLocation loc = gps.getLocation();
+
+  digitalWrite(BUILTIN_LED, HIGH);
+  loc = gps.getLocation();
   gps.getISODate(dateString);
 
   // print state
@@ -100,13 +104,22 @@ void upload(WifiState& wifiState) {
 // delay for a given duration (ms), rollover-safe implementation
 // offset may be a duration which has been "used up" before, so the delay is adaptive,
 // meaning that the interval of a adaptiveDelay() call is constant
-void adaptiveDelay(unsigned long ms, unsigned long offset = 0) {
+// returns earlier, if we moved more than MEASUREMENT_DISTANCE meters from our last fix
+void adaptiveDelay(unsigned long ms, TinyGPSLocation& lastLoc, unsigned long offset = 0) {
   unsigned long start = millis();
   for (;;) {
     // for some reason, operations have to be performed in this loop for
     // proper operation, so we just do the polling to be done anyway
     gps.pollGPS();
     telnet.pollClients();
+
+    // update our location. if we moved MEASUREMENT_DISTANCE meters or more, return
+    TinyGPSLocation newLoc = gps.getLocation();
+    double distanceToPrevLoc = TinyGPSPlus::distanceBetween(lastLoc.lat(), lastLoc.lng(), newLoc.lat(), newLoc.lng());
+    if (MEASUREMENT_DISTANCE_ENABLED && distanceToPrevLoc >= MEASUREMENT_DISTANCE) {
+      DEBUG_OUT << "moved  " << distanceToPrevLoc  << "m, delay stopped." << EOL;
+      return;
+    }
   
     unsigned long now = millis();
     unsigned long elapsed = now - start + offset;
@@ -135,6 +148,7 @@ void setup() {
   // wait until we got a first fix from GPS, and thus an initial time
   DEBUG_OUT << "Getting GPS fix..";
   while (!gps.updateLocation()) { DEBUG_OUT << "."; }
+  location = gps.getLocation();
   DEBUG_OUT << " done!" << EOL;
   digitalWrite(BUILTIN_LED, HIGH);
 
@@ -144,26 +158,22 @@ void setup() {
   DEBUG_OUT << "SPIFF bytes free: " << bytesFree << EOL << EOL;
 }
 
-unsigned long cycleStart;
-WifiState wifiState; // global, as both measure and upload need the state
-
 void loop() {
   cycleStart = millis();
   
   if (digitalRead(PIN_MEASURE_MODE) == HIGH)
-    measure(wifiState);
+    measure(wifiState, location);
   
   if (digitalRead(PIN_UPLOAD_MODE) == HIGH)
     upload(wifiState);
   
   if (digitalRead(PIN_MEASURE_MODE) == HIGH) {
     // run the measurements in a fixed interval, using an adaptive delay
-    // IDEA: dont use time but distance interval? -> TinyGPSPlus::distanceBetween()
-    adaptiveDelay(MEASUREMENT_INTERVAL, millis() - cycleStart);
-  } else {
-    // run as fast as possible when not measuring.
-    // adaptiveDelay has to be called anyway, as some polling functions are run within
-    adaptiveDelay(0);
+    // the interval is defined by a duration and/or distance from our last fix
+    return adaptiveDelay(MEASUREMENT_INTERVAL, location, millis() - cycleStart);
   }
+  // run as fast as possible when not measuring.
+  // smartDelay has to be called anyway, as some polling functions are run within
+  adaptiveDelay(0, location);
 }
 

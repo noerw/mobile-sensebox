@@ -57,7 +57,7 @@ class TelnetPrint : public Print {
     return 1;
   }
 
-  // Is only called for Strings, not char arrays
+  // Is only called for Strings, not char arrays?
   /*virtual size_t write(const char *buffer, size_t size) {
     for(uint8_t i = 0; i < MAX_TELNET_CLIENTS; i++){
       if (clients[i] && clients[i].connected()){
