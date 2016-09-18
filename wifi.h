@@ -11,13 +11,31 @@ struct WifiState {
 
 class Wifi {
   public:
-  void begin() {
-    WiFi.mode(WIFI_STA);
+  /*
+   * connects to the provided network. 
+   * if the connection is lost, it will attempt to reconnect,
+   * when the SSID is found again
+   * 
+   * also sets up an open AP "mobile-sensebox", on which you
+   * you can get debug output via telnet on 192.168.1.1:23
+   */
+  void begin(const char* ssid, const char* pass) {
+    const IPAddress AP_IP(192, 168, 1, 1);
+    const IPAddress AP_gateway(192, 168, 1, 1);
+    const IPAddress AP_subnet(255, 255, 255, 0);
+    
+    WiFi.mode(WIFI_AP_STA);
+    WiFi.persistent(false);       //
+    WiFi.setAutoConnect(false);   // <-- weird?!
+    WiFi.setAutoReconnect(false); //
+    WiFi.begin(ssid, pass);
+    WiFi.softAPConfig (AP_IP, AP_gateway, AP_subnet);
+    WiFi.softAP("mobile-sensebox");
   }
   
   WifiState scan(String homeSSID) {
     WifiState state;
-    int n = WiFi.scanNetworks(false,false);
+    int n = WiFi.scanNetworks(false, true); // (execute async, list hidden networks)
     state.numAccessPoints = n;
     state.numNetworks = n;
     state.numUnencrypted = 0;
@@ -47,26 +65,12 @@ class Wifi {
       }
     }
     
+    WiFi.scanDelete();
     return state;
   }
-  
-  bool connect(const char* ssid, const char* pass) {
-    static const unsigned int timeout = 10000; // abort after 10 secs
-    unsigned long start = millis();
-  
-    WiFi.disconnect();
-    WiFi.begin(ssid, pass);
-    //telnet.print("Connecting to WiFi.");
-    while (WiFi.status() != WL_CONNECTED && millis() - start < timeout) {
-      delay(200);
-      //telnet.print(".");
-    }
-    if (WiFi.status() == WL_CONNECTED) {
-      //telnet.println("connected!");
-      return true;
-    }
-    //telnet.println(" timeout");
-    return false;
+
+  bool reconnect() {
+    return WiFi.reconnect();
   }
 
   bool isConnected() {

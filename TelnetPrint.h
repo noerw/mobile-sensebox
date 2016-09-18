@@ -8,7 +8,7 @@
 
 # pragma once
 #include <ESP8266WiFi.h>
-#define MAX_TELNET_CLIENTS 3 // more
+#define MAX_TELNET_CLIENTS 3
 
 class TelnetPrint : public Print {
   protected:
@@ -18,9 +18,9 @@ class TelnetPrint : public Print {
   public:
   TelnetPrint(uint16_t port=23) : server(port) {}
 
-  void begin() {
+  void begin(int baudProxy = 0) {
     server.begin();
-    server.setNoDelay(true);
+    server.setNoDelay(false);
   }
 
   void pollClients() {
