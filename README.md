@@ -1,6 +1,6 @@
 # mobile-sensebox
 
-This is a modular (but probably overcomplicated) sketch for a mobile sensebox.
+This is a modular (but probably overcomplicated) sketch for a mobile sensebox, written as a part of my bachelors thesis.
 It measures arbitrary phenomena (currently only implemented: WiFi network count),
 which are geocoded and uploaded to the [openSenseMap](https://opensensemap.org) upon wifi connection.
 
@@ -13,14 +13,14 @@ Written for a ESP8266 ([Wemos D1 R1](http://www.wemos.cc/Products/d1.html)) with
 and based on the [ESP8266 Arduino core](https://github.com/esp8266/Arduino) for Arduino IDE.
 The sketch should work with any other ESP variant as well.
 
-The GPS module must provide NMEA sentences & be connected via the hardware serial (GPIOs `0` & `1`)
-SoftSerial did not work for me but created many issues (random crashes, due to buffer overflows?).
+The GPS module must provide NMEA sentences & be connected via the hardware serial (Wemos Pins `0` & `1`).
+`SoftSerial` did not work for me but created many issues (random crashes, due to buffer overflows?).
 
 ## software installation
 - install [Arduino IDE](https://arduino.cc/en/Main/Software)
 - install [ESP8266 Arduino core](https://github.com/esp8266/Arduino#installing-with-boards-manager)
 - connect your ESP8266 via USB
-- open the file `mobile-sensebox.ino` in the Arduino IDE
+- open the file `mobile-sensebox.ino` in Arduino IDE
 - change the configuration to your needs in the file `config.h`
 - select the board `Wemos D1 (retired)` (or whatever you have)
 - hit upload (the GPS device must not be connected!)
@@ -28,6 +28,7 @@ SoftSerial did not work for me but created many issues (random crashes, due to b
 ## program behaviour
 Once started, the device will idle until a first GPS fix was established.
 From then on the following procedure runs repeatedly:
+
 1. **measure** phenomena (wifi scan takes ~1sec)
 2. update GPS **location** (takes 0.5-2sec)
 3. **store** measurements to local filesystem (SPIFFS)
