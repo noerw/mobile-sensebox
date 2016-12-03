@@ -7,8 +7,8 @@
 
 struct Measurement {
   char timeStamp[20];
-  float lat;
-  float lng;
+  double lat;
+  double lng;
   float value;
   char sensorID[24];
 };
@@ -20,16 +20,15 @@ class Storage {
     f << m.sensorID << '\n';
 
     // convert floats to strings
-    char val[10], lat[10], lng[10];
-    dtostrf(m.value, 5, 6, val);
-    dtostrf(m.lat, 5, 6, lat);
-    dtostrf(m.lng, 5, 6, lng);
+    char val[8], lat[16], lng[16];
+    dtostrf(m.value, 6, 4, val);
+    dtostrf(m.lat, 12, 8, lat);
+    dtostrf(m.lng, 12, 8, lng);
 
     f << "{\"value\":" << val
       << ",\"createdAt\":\"" << m.timeStamp
-      << "\",\"lat\":" << lat
-      << ",\"lng\":" << lng
-      << "}" << EOL;
+      << "\",\"location\":[" << lng << "," << lat
+      << "]}" << EOL;
   }
 
   public:
