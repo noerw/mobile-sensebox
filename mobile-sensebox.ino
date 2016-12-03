@@ -31,7 +31,7 @@ bool storeMeasurement(float lat, float lng, float value, const char* timeStamp, 
 
 void measure(WifiState& wifiState, TinyGPSLocation& loc) {
   char dateString[20];
-  
+
   // measure WiFi
   wifiState = wifi.scan(WIFI_SSID);
 
@@ -52,13 +52,13 @@ void measure(WifiState& wifiState, TinyGPSLocation& loc) {
   DEBUG_OUT << "numNetworks:    " << wifiState.numNetworks << EOL;
   DEBUG_OUT << "numUnencrypted: " << wifiState.numUnencrypted << EOL;
   DEBUG_OUT.print("lat: ");
-  DEBUG_OUT.print(loc.lat(), 6);
+  DEBUG_OUT.print(loc.lat(), 8);
   DEBUG_OUT.print(" lng: ");
-  DEBUG_OUT.println(loc.lng(), 6);
+  DEBUG_OUT.println(loc.lng(), 8);
   DEBUG_OUT << dateString << EOL;
 
   // IDEA: write location update to separate file?
-  
+
   // write measurements to file
   if (!storeMeasurement(loc.lat(), loc.lng(), wifiState.numAccessPoints, dateString, ID_SENSOR_WIFI_APS))
     DEBUG_OUT << "measurement (wifi aps) store failed!" << EOL;
@@ -68,7 +68,7 @@ void measure(WifiState& wifiState, TinyGPSLocation& loc) {
 
   if (!storeMeasurement(loc.lat(), loc.lng(), wifiState.numUnencrypted, dateString, ID_SENSOR_WIFI_OPEN))
     DEBUG_OUT << "measurement (wifi open) store failed!" << EOL;
-    
+
   DEBUG_OUT << EOL;
 }
 
@@ -77,7 +77,7 @@ void upload(WifiState& wifiState) {
   size_t numMeasures = storage.size();
   DEBUG_OUT << numMeasures << " measurements stored." << EOL;
   if (!numMeasures) return;
-  
+
   // in case we are not measuring, scan manually to detect the home network
   // somehow the automatic reconnect does not work.. TODO
   if (!connected && digitalRead(PIN_MEASURE_MODE) == LOW)
@@ -114,7 +114,7 @@ void upload(WifiState& wifiState) {
  * offset may be a duration which has been "used up" before, so the delay is adaptive,
  * meaning that the interval of a adaptiveDelay() call is constant
  * returns earlier, if we moved more than MEASUREMENT_DISTANCE meters from our last fix
- * 
+ *
  * also polls the GPS serial & telnet connections!
  */
 void adaptiveDelay(unsigned long ms, TinyGPSLocation& lastLoc, unsigned long offset = 0, bool checkDistance = false) {
@@ -132,7 +132,7 @@ void adaptiveDelay(unsigned long ms, TinyGPSLocation& lastLoc, unsigned long off
       DEBUG_OUT << "moved  " << distanceToPrevLoc  << "m, delay stopped." << EOL;
       return;
     }
-  
+
     unsigned long now = millis();
     unsigned long elapsed = now - start + offset;
     if (elapsed >= ms) return;
@@ -146,21 +146,24 @@ void setup() {
   digitalWrite(BUILTIN_LED, LOW);
   pinMode(PIN_MEASURE_MODE, INPUT_PULLUP); // switch for measurements (pull it down to disable)
   pinMode(PIN_UPLOAD_MODE, INPUT_PULLUP);  // switch for API uploads  (pull it down to disable)
-  
+
   size_t bytesFree = storage.begin();
   gps.begin();
   wifi.begin(WIFI_SSID, WIFI_PASS);
   DEBUG_OUT.begin(115200);
 
-  // wait until we got a first fix from GPS, and thus an initial *time*
-  DEBUG_OUT << "Getting GPS fix..";
-  while (!gps.updateLocation()) { 
-    adaptiveDelay(0, location); // poll for telnet connections
-    DEBUG_OUT << ".";
+  // wait until we got a first fix from GPS, and thus an initial time
+  // exception: measure mode is disabled (for quick upload only)
+  if (digitalRead(PIN_MEASURE_MODE) == HIGH) {
+    DEBUG_OUT << "Getting GPS fix..";
+    while (!gps.updateLocation()) {
+      adaptiveDelay(0, location); // poll for telnet connections
+      DEBUG_OUT << ".";
+    }
+    location = gps.getLocation();
+    DEBUG_OUT << " done!" << EOL;
+    digitalWrite(BUILTIN_LED, HIGH);
   }
-  location = gps.getLocation();
-  DEBUG_OUT << " done!" << EOL;
-  digitalWrite(BUILTIN_LED, HIGH);
 
   // DEBUG
   //while (!wifi.isConnected()) adaptiveDelay(500, location);
@@ -174,22 +177,22 @@ void setup() {
 
 void loop() {
   cycleStart = millis();
-  
+
   adaptiveDelay(0, location); // do some polling inbetween
-  
+
   if (digitalRead(PIN_MEASURE_MODE) == HIGH)
     measure(wifiState, location);
-  
+
   adaptiveDelay(0, location); // do some polling inbetween
-  
+
   if (digitalRead(PIN_UPLOAD_MODE) == HIGH)
     upload(wifiState);
-  
-  if (digitalRead(PIN_MEASURE_MODE) == HIGH) {
-    // run the measurements in a fixed interval, using an adaptive delay
-    // the interval is defined by a duration and/or distance from our last fix
+
+  // run the measurements in a fixed interval, using an adaptive delay
+  // the interval is defined by a duration and/or distance from our last fix
+  if (digitalRead(PIN_MEASURE_MODE) == HIGH)
     return adaptiveDelay(MEASUREMENT_INTERVAL, location, millis() - cycleStart, MEASUREMENT_DISTANCE_ENABLED);
-  }
+
   // run as fast as possible when not measuring.
   // smartDelay has to be called anyway, as some polling functions are run within
   adaptiveDelay(0, location);

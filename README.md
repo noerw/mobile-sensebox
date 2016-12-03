@@ -48,7 +48,7 @@ So you either..
 - connect to the open network `mobile-sensebox` and run `telnet 192.168.1.1`
 - connect to the same network as configured in `config.h` and run `telnet <whateverIPtheESPgets>`
 
-Connections are not polled all the time, so you may have to wait a moment until you recieve first data.
+Connections are not polled all the time, so you may have to wait a moment until you receive first data.
 
 Note that, due to the limited single-channel hardware of the ESP8266,
 a reconnection to the configured WiFi network fails,
