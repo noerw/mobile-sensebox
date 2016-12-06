@@ -1,4 +1,5 @@
 #include "lib/TinyGPS++/TinyGPS++.h"
+#include "lib/BME280/BME280I2C.h"
 #include "config.h"
 #include "gps.h"
 #include "wifi.h"
@@ -15,6 +16,8 @@ TelnetPrint telnet = TelnetPrint();
 OsemApi api = OsemApi();
 Gps gps = Gps();
 
+BME280I2C bme(1, 1, 1, 3, 5, 0, false, 0x77);
+
 unsigned long cycleStart;
 WifiState wifiState; // global, as both measure and upload need the state
 TinyGPSLocation location;
@@ -30,7 +33,8 @@ bool storeMeasurement(float lat, float lng, float value, const char* timeStamp, 
 }
 
 void measure(WifiState& wifiState, TinyGPSLocation& loc) {
-  char dateString[20];
+  char dateString[22];
+  float temperature, humid, pressure;
 
   // measure WiFi
   wifiState = wifi.scan(WIFI_SSID);
@@ -46,11 +50,16 @@ void measure(WifiState& wifiState, TinyGPSLocation& loc) {
   loc = gps.getLocation();
   gps.getISODate(dateString);
 
+  bme.read(pressure, temperature, humid, 1, true);
+
   // print state
   DEBUG_OUT << "homeAvailable:  " << wifiState.homeAvailable << EOL;
   DEBUG_OUT << "numAPs:         " << wifiState.numAccessPoints << EOL;
   DEBUG_OUT << "numNetworks:    " << wifiState.numNetworks << EOL;
   DEBUG_OUT << "numUnencrypted: " << wifiState.numUnencrypted << EOL;
+  DEBUG_OUT << "temperature: " << temperature << EOL;
+  DEBUG_OUT << "pressure: " << pressure << EOL;
+
   DEBUG_OUT.print("lat: ");
   DEBUG_OUT.print(loc.lat(), 8);
   DEBUG_OUT.print(" lng: ");
@@ -68,6 +77,12 @@ void measure(WifiState& wifiState, TinyGPSLocation& loc) {
 
   if (!storeMeasurement(loc.lat(), loc.lng(), wifiState.numUnencrypted, dateString, ID_SENSOR_WIFI_OPEN))
     DEBUG_OUT << "measurement (wifi open) store failed!" << EOL;
+
+  if (!storeMeasurement(loc.lat(), loc.lng(), temperature, dateString, ID_SENSOR_TEMP))
+    DEBUG_OUT << "measurement (temperature) store failed!" << EOL;
+
+  if (!storeMeasurement(loc.lat(), loc.lng(), pressure, dateString, ID_SENSOR_PRESSURE))
+    DEBUG_OUT << "measurement (pressure) store failed!" << EOL;
 
   DEBUG_OUT << EOL;
 }
@@ -142,7 +157,7 @@ void adaptiveDelay(unsigned long ms, TinyGPSLocation& lastLoc, unsigned long off
 
 /* MAIN ENTRY POINTS */
 void setup() {
-  pinMode(BUILTIN_LED, OUTPUT);   // status indicator LED: on = no GPS fix
+  pinMode(BUILTIN_LED, OUTPUT); // status indicator LED: on = no GPS fix
   digitalWrite(BUILTIN_LED, LOW);
   pinMode(PIN_MEASURE_MODE, INPUT_PULLUP); // switch for measurements (pull it down to disable)
   pinMode(PIN_UPLOAD_MODE, INPUT_PULLUP);  // switch for API uploads  (pull it down to disable)
@@ -151,6 +166,11 @@ void setup() {
   gps.begin();
   wifi.begin(WIFI_SSID, WIFI_PASS);
   DEBUG_OUT.begin(115200);
+
+  while(!bme.begin(D14, D15)){
+    adaptiveDelay(1000, location);
+    DEBUG_OUT.println("Could not find BME280I2C sensor!");
+  }
 
   // wait until we got a first fix from GPS, and thus an initial time
   // exception: measure mode is disabled (for quick upload only)
