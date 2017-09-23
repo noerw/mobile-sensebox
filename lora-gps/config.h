@@ -1,5 +1,9 @@
 #include <lmic.h> // for the key data type u1_t
 
+#define SD_PIN 4
+#define SDS_SERIAL Serial3
+#define GPS_SERIAL Serial2
+
 // Schedule TX every this many seconds (might become longer due to duty
 // cycle limitations).
 const unsigned TX_INTERVAL = 40;

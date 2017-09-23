@@ -1,7 +1,7 @@
 /**
    lora-gps senseBox with SDS011 particulate matter + HDC1008 temp & humi sensors
    for Arduino Mega with Dragino LoRa shield.
-   SDS is on Serial3, GPS on Serial2
+   SDS is on SDS_SERIAL, GPS on GPS_SERIAL
 */
 
 #include "config.h"
@@ -19,7 +19,7 @@
 TinyGPSPlus gps;
 
 //Load sensors
-SDS011 my_sds(Serial3);
+SDS011 my_sds(SDS_SERIAL);
 HDC100X HDC(0x43);
 
 //measurement variables
@@ -40,9 +40,9 @@ void do_send(osjob_t* j) {
     {
       // TODO
       //while (gps.location.isUpdated() && gps.location.isValid())
-      while (Serial2.available())
+      while (GPS_SERIAL.available())
       {
-        char c = Serial2.read();
+        char c = GPS_SERIAL.read();
         if (gps.encode(c)) // Did a new valid sentence come in?
           newData = true;
       }
@@ -104,14 +104,14 @@ void initSensors() {
   temperature = HDC.getTemp();
 
   // initialize GPS Serial Port
-  Serial2.begin(9600);
-  while (!Serial2.available()) {
+  GPS_SERIAL.begin(9600);
+  while (!GPS_SERIAL.available()) {
     Serial.println("detecting GPS device...");
     delay(1000);
   }
   Serial.println("Wait for GPS...");
   while (!gps.location.isValid()) {
-    gps.encode(Serial2.read());
+    gps.encode(GPS_SERIAL.read());
     delay(1);
   }
   Serial.println("Got GPS fix!");
@@ -119,14 +119,14 @@ void initSensors() {
   // init SD card
   Serial.print("Initializing SD card...");
 
-  if (!SD.begin(4)) {
+  if (!SD.begin(SD_PIN)) {
     Serial.println("failed!");
     return;
   }
   Serial.println("done!");
 
   // initalize SDS Serial Port
-  Serial3.begin(9600);
+  SDS_SERIAL.begin(9600);
 }
 
 void setup() {
