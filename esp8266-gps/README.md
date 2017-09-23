@@ -1,4 +1,4 @@
-# mobile-sensebox
+# esp8266-gps
 
 This is a modular (but probably overcomplicated) sketch for a mobile sensebox, written as a part of my bachelors thesis.
 It measures arbitrary phenomena (currently only implemented: WiFi network count),

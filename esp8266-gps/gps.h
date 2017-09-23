@@ -1,6 +1,6 @@
 #pragma once
-#include "lib/TinyGPS++/TinyGPS++.h"
-#include "lib/Time/Time.h"
+#include <TinyGPS++.h>
+#include <Time.h>
 #include "config.h"
 
 class Gps {

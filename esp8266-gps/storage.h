@@ -1,7 +1,7 @@
 #pragma once
 
 #include <FS.h>
-#include "lib/ESP8266TrueRandom/ESP8266TrueRandom.h"
+#include <ESP8266TrueRandom.h>
 #include "config.h"
 #include "streampipe.h"
 

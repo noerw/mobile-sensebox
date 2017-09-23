@@ -1,4 +1,4 @@
-#include "lib/TinyGPS++/TinyGPS++.h"
+#include <TinyGPS++.h>
 #include "lib/BME280/BME280I2C.h"
 #include "config.h"
 #include "gps.h"
