@@ -6,7 +6,7 @@
  * to disable the routines, just skip the begin() call in the setup
  */
 
-# pragma once
+#pragma once
 #include <ESP8266WiFi.h>
 #define MAX_TELNET_CLIENTS 3
 
@@ -14,7 +14,7 @@ class TelnetPrint : public Print {
   protected:
   WiFiServer server;
   WiFiClient clients[MAX_TELNET_CLIENTS];
-  
+
   public:
   TelnetPrint(uint16_t port=23) : server(port) {}
 
@@ -44,7 +44,7 @@ class TelnetPrint : public Print {
       //no free/disconnected spot so reject
       WiFiClient serverClient = server.available();
       serverClient.stop();
-    }      
+    }
   }
 
   // TODO: find more efficient method than sending byte by byte (!)

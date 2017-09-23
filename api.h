@@ -9,7 +9,7 @@ class OsemApi {
 
   public:
   bool postMeasurement(String measurement, String sensorID) {
-    if (!client.connect(API_ENDPOINT, 8000)) return false;
+    if (!client.connect(API_ENDPOINT, 80)) return false;
 
     client << String("POST ") << "/boxes/" << ID_BOX << "/" << sensorID << " HTTP/1.1" << EOL;
     client << "Host: " << API_ENDPOINT << EOL;

@@ -21,7 +21,7 @@ class Storage {
 
     // convert floats to strings
     char val[8], lat[16], lng[16];
-    dtostrf(m.value, 6, 4, val);
+    dtostrf(m.value, 6, 2, val);
     dtostrf(m.lat, 12, 8, lat);
     dtostrf(m.lng, 12, 8, lng);
 
