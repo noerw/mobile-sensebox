@@ -1,0 +1,54 @@
+{
+  "name": "lora-serialization",
+  "version": "0.0.0-development",
+  "description": "LoraWAN serialization/deserialization library for The Things Network",
+  "main": "src/index.js",
+  "directories": {
+    "test": "test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/thesolarnomad/lora-serialization"
+  },
+  "scripts": {
+    "coverage": "nyc report --reporter=lcov",
+    "coveralls": "lcov-result-merger 'coverage/*.info' | coveralls",
+    "lint": "eslint .",
+    "test": "nyc ava",
+    "test:watch": "ava --watch",
+    "test:c": "./.ci/run_c_tests.sh",
+    "semantic-release": "semantic-release pre && npm publish && semantic-release post"
+  },
+  "keywords": [
+    "lora",
+    "lorawan",
+    "ttn",
+    "thethingsnetwork",
+    "arduino",
+    "serialization",
+    "deserialization",
+    "cpp"
+  ],
+  "author": "Joscha Feth <joscha@feth.com>",
+  "license": "MIT",
+  "devDependencies": {
+    "ava": "^0.18.2",
+    "coveralls": "^2.11.16",
+    "cz-conventional-changelog": "^2.0.0",
+    "eslint": "^3.0.1",
+    "lcov-result-merger": "^1.2.0",
+    "nyc": "^10.1.2",
+    "semantic-release": "^6.3.6"
+  },
+  "config": {
+    "commitizen": {
+      "path": "./node_modules/cz-conventional-changelog"
+    }
+  },
+  "ava": {
+    "files": [
+      "test/**/*.js",
+      "!test/base.js"
+    ]
+  }
+}

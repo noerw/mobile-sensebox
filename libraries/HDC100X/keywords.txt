@@ -1,0 +1,22 @@
+#######################################
+# Datatypes (KEYWORD1)
+#######################################
+
+HDC100X	KEYWORD1
+
+#######################################
+# Methods and Functions (KEYWORD2)
+#######################################
+begin	KEYWORD2
+setAddr	KEYWORD2
+setDrPin	KEYWORD2
+setMode	KEYWORD2
+setHeater	KEYWORD2
+battLow	KEYWORD2
+getTemp	KEYWORD2
+getHumi	KEYWORD2
+getRawTemp	KEYWORD2
+getRawHumi	KEYWORD2
+getConfigReg	KEYWORD2
+read2Byte	KEYWORD2
+writeConfigData	KEYWORD2
