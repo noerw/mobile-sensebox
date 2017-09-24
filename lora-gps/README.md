@@ -15,6 +15,18 @@ It's based on
 
 For mobile power supply I used an Adafruit LiPo charger + 5.6Ah LiPo.
 
+## Notes about device operation
+The device only measures and transmits once there was an initial GPS fix and a
+successful handshake with TheThingsNetwork. This means the device only begins
+operating when placed outdoors in areas with [TTN coverage](https://ttnmapper.org).
+
+**Important**: TheThingsNetwork has a fair use policy, giving each device an
+uplink transmission time of 300 seconds per day. This means, that the rate at
+which you transmit depends on the duration you use the device per day.
+Each message payload has 24 bytes and is sent on a slow datarate SF10 (for higher range).
+You can use [this calculator](https://docs.google.com/spreadsheets/d/1eL1nHxMidIcIdDE_l-DoY3kmE2e8b0YpOBW64WnYxj8)
+to find a transmission interval that suits you.
+
 ## Sketch setup & opsensensemap integration
 
 - Register a device under <https://console.thethingsnetwork.org>
