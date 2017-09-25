@@ -32,8 +32,7 @@
 #define DEBUG_OUT Serial2
 #define SD_CHIPSELECT 4
 
-#define MEASURE_INTERVAL 30000
-#define GPSIDLE_INTERVAL 300000
+#define MEASURE_INTERVAL 15000
 
 //Load sensors
 SDS011 sds(Serial);
@@ -45,7 +44,6 @@ String logfile_path;
 uint32_t cyclestart = 0;
 double lastLat = 0;
 double lastLng = 0;
-long gpsupdate_scheduled = 0;
 
 //measurement variables
 float temperature = 0, humidity = 0, pm10 = 0, pm25 = 0;
@@ -254,24 +252,12 @@ void setup() {
 void loop(void) {
   cyclestart = millis();
 
-  // TODO: only update fix, if accelerometer indicates movement?
-  // TODO: check battery voltage & blink LED if low?
-  if (millis() >= gpsupdate_scheduled) {
-    if (!updateLocation()) {
-      return DEBUG_OUT.println("couldnt get fix");
-    }
-
-    // determine, how far we moved. if less than 20m, reduce update interval
-    if (gps.distanceBetween(lastLat, lastLng, gps.location.lat(), gps.location.lng()) > 20) {
-      gpsupdate_scheduled = cyclestart + MEASURE_INTERVAL;
-    } else {
-      gpsupdate_scheduled = cyclestart + GPSIDLE_INTERVAL;
-      //digitalWrite(GPS_ENABLE, LOW); // save energy for longer interval
-    }
-
-    lastLat = gps.location.lat();
-    lastLng = gps.location.lng();
+  if (!updateLocation()) {
+    return DEBUG_OUT.println("couldnt get fix");
   }
+
+  lastLat = gps.location.lat();
+  lastLng = gps.location.lng();
 
 
   //-----Temperature-----//
