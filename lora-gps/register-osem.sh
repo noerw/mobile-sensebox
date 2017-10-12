@@ -16,4 +16,4 @@ boxresult=$(curl -H "content-type: application/json" -H "Authorization: Bearer $
 OSEM_BOX=$(echo $boxresult | jq .data._id  | tr -d '"')
 OSEM_SENSOR=$(echo $boxresult | jq .data.sensors[1]._id  | tr -d '"')
 
-echo "$OSEM_API/boxes/$OSEM_BOX/locations
+echo "$OSEM_API/boxes/$OSEM_BOX/locations"

@@ -51,7 +51,7 @@ to find a transmission interval that suits you.
 - Flash the sketch using Arduino IDE
 - Stack the senseBox Shield onto the Arduino, then stack the Dragino shield on top.
 - Remove the `GPS_TX` and `GPS_RX` jumpers on the Dragino Shield, and wire these
-  pins instead to the Arduinos `RX3` and `TX3` pins.
-- Wire the SDS011: RX & TX go to `RX2` and `TX2` on the Arduino, GND to GND, 5V to 5V ;)
+  pins instead to the Arduinos `RX2` and `TX2` pins.
+- Wire the SDS011: RX & TX go to `RX3` and `TX3` on the Arduino, GND to GND, 5V to 5V ;)
 - Connect the LiPo to the LiPo-Charger, and connect the USB Output to the Arduino
 - Done!
